@@ -1,4 +1,11 @@
-import 'dotenv/config'; 
+
+import 'dotenv/config';
+
+// Log ทุกค่าจาก env
+console.log('ENV VARIABLES:');
+Object.entries(process.env).forEach(([key, value]) => {
+    console.log(`${key}: ${value}`);
+});
 
 import express from 'express';
 import axios from 'axios';
