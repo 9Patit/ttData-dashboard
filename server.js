@@ -6,8 +6,8 @@ import axios from 'axios';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const CLIENT_KEY = "awjvxz4l661csu9q";
-const CLIENT_SECRET = "F9I19JySRKjZyeFBCLVtGULj068C8MhW";
+const CLIENT_KEY = "sbawjnojg5mp701vca";
+const CLIENT_SECRET = "a3e4Zkoul4ePWpocsnwHUjGV7jJSHkJs";
 const REDIRECT_URI = "https://tt-api.weisework.com/callback";
 
 app.get('/', (req, res) => {
