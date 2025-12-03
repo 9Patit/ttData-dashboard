@@ -54,19 +54,21 @@ app.get('/callback', async (req, res) => {
         }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
 
         const accessToken = tokenResp.data.access_token;
-        const openId = tokenResp.data.open_id; 
+        const openId = tokenResp.data.open_id;
 
         const userResp = await axios.get('https://open.tiktokapis.com/v2/user/info/', {
             headers: { 'Authorization': `Bearer ${accessToken}` },
             params: { fields: 'display_name,avatar_url,follower_count,likes_count' }
         });
 
+        const videoFields = [
+            "title", "cover_image_url", "share_url", "create_time", 
+            "view_count", "like_count", "comment_count", "share_count"
+        ];
+
         const videoResp = await axios.post('https://open.tiktokapis.com/v2/video/list/', {
             max_count: 10,
-            fields: [
-                "title", "cover_image_url", "share_url", "create_time", 
-                "view_count", "like_count", "comment_count", "share_count"
-            ]
+            fields: videoFields.join(',')
         }, {
             headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }
         });
