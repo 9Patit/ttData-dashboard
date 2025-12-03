@@ -10,6 +10,10 @@ const CLIENT_KEY = process.env.CLIENT_KEY;
 const CLIENT_SECRET = process.env.CLIENT_SECRET; 
 const REDIRECT_URI = process.env.REDIRECT_URI;
 
+app.get('/', (req, res) => {
+    res.redirect('/login');
+});
+
 app.get('/terms', (req, res) => {
     res.send('<h1>Terms of Service (TTData)</h1><p>This is a temporary page for API verification.</p>');
 });
