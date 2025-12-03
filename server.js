@@ -22,9 +22,8 @@ app.get('/privacy', (req, res) => {
     res.send('<h1>Privacy Policy (TTData)</h1><p>This is a temporary page for API verification.</p>');
 });
 
-app.get('/login', (req, res) => {
-    const scopes = 'user.info.basic';
-    // const scopes = 'user.info.basic,user.info.profile,user.info.stats,video.list';
+app.get('/login', (req, res) => {    
+    const scopes = 'user.info.basic,user.info.profile,user.info.stats,video.list';
     const csrfState = Math.random().toString(36).substring(7);
     
     const url = 'https://www.tiktok.com/v2/auth/authorize/';
