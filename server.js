@@ -1,21 +1,14 @@
 
 import 'dotenv/config';
-
-// Log ทุกค่าจาก env
-console.log('ENV VARIABLES:');
-Object.entries(process.env).forEach(([key, value]) => {
-    console.log(`${key}: ${value}`);
-});
-
 import express from 'express';
 import axios from 'axios';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const CLIENT_KEY = process.env.CLIENT_KEY;
-const CLIENT_SECRET = process.env.CLIENT_SECRET; 
-const REDIRECT_URI = process.env.REDIRECT_URI;
+const CLIENT_KEY = "awjvxz4l661csu9q";
+const CLIENT_SECRET = "F9I19JySRKjZyeFBCLVtGULj068C8MhW";
+const REDIRECT_URI = "https://tt-api.weisework.com/callback";
 
 app.get('/', (req, res) => {
     res.redirect('/login');
