@@ -84,11 +84,13 @@ app.get("/callback", async (req, res) => {
       "share_count",
     ];
 
+		const videoFieldsString = videoFields.join(',');
+
     const videoResp = await axios.post(
       "https://open.tiktokapis.com/v2/video/list/",
       {
         max_count: 10,
-        fields: videoFields,
+        fields: videoFieldsString,
       },
       {
         headers: {
