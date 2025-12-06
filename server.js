@@ -1,13 +1,30 @@
 import "dotenv/config";
 import express from "express";
 import axios from "axios";
+import { sha256 } from "js-sha256";
+import base64url from "base64url";
+import fs from "fs";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const CLIENT_KEY = "sbawjnojg5mp701vca";
-const CLIENT_SECRET = "a3e4Zkoul4ePWpocsnwHUjGV7jJSHkJs";
-const REDIRECT_URI = "https://tt-api.weisework.com/callback";
+const CLIENT_KEY = process.env.CLIENT_KEY;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const REDIRECT_URI = process.env.REDIRECT_URI;
+
+const generateRandomString = (length) => {
+  const possible =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
+  let text = "";
+  for (let i = 0; i < length; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+  return text;
+};
+
+const codeVerifier = generateRandomString(128);
+const codeChallenge = base64url(sha256.arrayBuffer(codeVerifier));
+
 
 app.get("/", (req, res) => {
   res.redirect("/login");
@@ -26,7 +43,7 @@ app.get("/privacy", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  const scopes = "user.info.basic,user.info.profile,user.info.stats,video.list";
+  const scopes = "user.info.basic,user.info.stats,video.list";
   const csrfState = Math.random().toString(36).substring(7);
 
   const url = "https://www.tiktok.com/v2/auth/authorize/";
@@ -36,11 +53,14 @@ app.get("/login", (req, res) => {
     response_type: "code",
     redirect_uri: REDIRECT_URI,
     state: csrfState,
+    code_challenge: codeChallenge,
+    code_challenge_method: "S256",
   };
 
   const qs = new URLSearchParams(params).toString();
   res.redirect(`${url}?${qs}`);
 });
+
 
 app.get("/callback", async (req, res) => {
   const { code } = req.query;
@@ -56,6 +76,7 @@ app.get("/callback", async (req, res) => {
         code: code,
         grant_type: "authorization_code",
         redirect_uri: REDIRECT_URI,
+        code_verifier: codeVerifier,
       }),
       { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     );
@@ -63,58 +84,70 @@ app.get("/callback", async (req, res) => {
     const accessToken = tokenResp.data.access_token;
     const openId = tokenResp.data.open_id;
 
+    if (!accessToken) {
+      throw new Error(
+        "Token exchange failed: No access token received in response data."
+      );
+    }
+
     const userResp = await axios.get(
       "https://open.tiktokapis.com/v2/user/info/",
       {
         headers: { Authorization: `Bearer ${accessToken}` },
         params: {
-          fields: "display_name,avatar_url,follower_count,likes_count",
+          fields:
+            "display_name,avatar_url,follower_count,video_count,likes_count",
         },
       }
     );
 
-    const videoFields = [
-      "title",
-      "cover_image_url",
-      "share_url",
-      "create_time",
-      "view_count",
-      "like_count",
-      "comment_count",
-      "share_count",
-    ];
-
-		const videoFieldsString = videoFields.join(',');
-
-    const videoResp = await axios.post(
+    const videoListResp = await axios.post(
       "https://open.tiktokapis.com/v2/video/list/",
-      {
-        max_count: 10,
-        fields: videoFieldsString,
+      {       
+        max_count: 20,
+        cursor: "0", 
       },
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
+        params: {
+          fields:
+            "id,title,cover_image_url,video_description,duration,share_url,embed_html,create_time,view_count,like_count,comment_count,share_count",
+        },
       }
     );
 
-    res.status(200).json({
-      status: "SUCCESS: Data Retrieved",
+    const finalData = {
+      timestamp: new Date().toISOString(),
       user_id: openId,
-      user_stats: userResp.data.data.user,
-      video_metrics: videoResp.data.data.videos,
+      user_profile_and_stats: userResp.data.data.user,
+      video_list: videoListResp.data.data.videos,
+    };
+    
+    const jsonOutput = JSON.stringify(finalData, null, 2);
+    const fileName = 'tiktok_data.json';
+    fs.writeFileSync(fileName, jsonOutput);
+    
+    console.log(`✅ ข้อมูลถูกบันทึกในไฟล์ ${fileName}`);
+
+    res.status(200).json({
+      status: `SUCCESS: All API Data Retrieved and saved to ${fileName}`,
+      ...finalData,
     });
+    
   } catch (error) {
-    console.error("API Call Error:", error.response?.data || error.message);
-    res.status(500).send(`Error processing request. Check server logs.`);
+    console.error("--- API CALL ERROR ---");
+    console.error("Error Details:", error.response?.data || error.message);
+    console.error("----------------------");
+    res
+      .status(500)
+      .send(`Error processing request. Check server logs for details.`);
   }
 });
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(
-    `Open in browser: ${REDIRECT_URI.replace("/callback", "/login")}`
-  );
+  console.log(`Open in browser: ${REDIRECT_URI.replace("/callback", "/login")}`);
 });
